@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Text, TextInput, View, StyleSheet, TouchableOpacity } from 'react-native';
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import firebaseConfig from '../firebaseConfig';
+import firebaseConfig from '../../firebaseConfig';
 
 const app = initializeApp(firebaseConfig);
 

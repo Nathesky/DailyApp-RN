@@ -1,9 +1,28 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getAuth, onAuthStateChanged, signOut } from '@firebase/auth';
+import firebaseConfig from '../../firebaseConfig';
 
 export default function Home({ navigation }) {
+  
+    const [diario, setDiario] = useState([]);
+
+  function deleteDiario(id){
+    firebaseConfig.collection("diario").doc(id).delete();
+    Alert.alert("O diário foi deletado com sucesso");
+  }
+
+  useEffect(() =>{
+      firebaseConfig.collection("diario").onSnapshot((query) =>{
+        const list = [];
+        query.forEach((doc) => {
+          list.push({...doc.data(),id: doc.id});
+        });
+        setDiario(list);
+      });
+  },[]);
+  
   const auth = getAuth();
 
   useEffect(() => {
@@ -29,6 +48,9 @@ export default function Home({ navigation }) {
       <TouchableOpacity onPress={fazerLogout} style={styles.logoutButton}>
         <Ionicons name="log-out-outline" size={24} color="black" />
       </TouchableOpacity>
+
+    
+
       <View style={styles.content}>
         <Text style={styles.title}>My Daily</Text>
         <Text style={styles.subtitle}>Data: 25/03/2024</Text>
