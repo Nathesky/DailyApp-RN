@@ -3,7 +3,6 @@ import { Text, TextInput, View, StyleSheet, TouchableOpacity } from 'react-nativ
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import firebaseConfig from '../../firebaseConfig';
-
 const app = initializeApp(firebaseConfig);
 
 export default function Login({navigation}){

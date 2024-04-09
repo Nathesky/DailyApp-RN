@@ -1,101 +1,80 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, TouchableOpacity, View, Text, FlatList, StyleSheet, Alert } from 'react-native';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Ionicons } from '@expo/vector-icons';
-import { getAuth, onAuthStateChanged, signOut } from '@firebase/auth';
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { getFirestore } from "firebase/firestore";
 import firebaseConfig from '../../firebaseConfig';
-import { FlatList } from 'react-native-gesture-handler';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function Home({ navigation }) {
-  const [diario, setDiario] = useState([]);
-
-  useEffect(() => {
-    const unsubscribe = firebaseConfig.collection("diario").onSnapshot((querySnapshot) => {
-      const list = [];
-      querySnapshot.forEach((doc) => {
-        list.push({ ...doc.data(), id: doc.id });
-      });
-      setDiario(list);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
+  
   const auth = getAuth();
+  const [diario, setDiario] = useState([]);
+  const firestore = getFirestore();
+
+  function deleteDiario(id) {
+    deleteDoc(doc(collection(firestore, 'diario'), id))
+      .catch((error) => {
+        console.error('Erro ao excluir diário:', error.message);
+      });
+  }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigation.navigate('Login');
-      }
+    const unsubscribeDiario = onSnapshot(collection(firestore, 'diario'), (querySnapshot) => {
+      const lista = [];
+      querySnapshot.forEach((doc) => { lista.push({ ...doc.data(), id: doc.id }); });
+      setDiario(lista);
+    }); 
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (!user) { navigation.navigate('Login'); }
     });
 
-    return () => unsubscribe();
+    return () => { unsubscribeDiario(); unsubscribeAuth(); };
   }, [auth, navigation]);
 
-  const deleteDiario = async (id) => {
-    try {
-      await firebaseConfig.collection("diario").doc(id).delete();
-      Alert.alert("O diário foi deletado com sucesso");
-    } catch (error) {
-      console.error("Erro ao deletar o diário:", error);
-    }
-  };
-
   const fazerLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error.message);
-    }
+    try { await signOut(auth); } 
+    catch (error) { console.error('Erro ao sair da conta:', error.message); }
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <TouchableOpacity onPress={fazerLogout} style={styles.logoutButton}>
-        <Ionicons name="log-out-outline" size={24} color="black" />
+        <Ionicons name="log-out-outline" size={24} color="red" />
       </TouchableOpacity>
+      <FlatList 
+        data={diario} 
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => navigation.navigate('Alterar Diario', {
+            id: item.id,
+            data: item.data instanceof Date ? item.data.toDate() : null, 
+            texto: item.texto,
+            local: item.local,
+          }) }>
+            <SafeAreaView>
+              <View style={styles.content}>
+                <Text style={styles.title}> Título: <Text style={styles.itemText}>{item.titulo}</Text> </Text>
+                <Text style={styles.itemText}> Data: {item.data} </Text>
+                <Text style={styles.itemText}> Texto: <Text style={styles.itemText}>{item.texto}</Text> </Text>
+                <Text style={styles.itemText}> Local: <Text style={styles.itemText}>{item.local}</Text> </Text>
 
-      <View style={styles.content}>
-        <Text style={styles.title}>Lista de Dias</Text>
-        <FlatList
-          data={diario}
-          renderItem={({ item }) => (
-            <View style={styles.diarioItem}>
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate("AlterarDiario", {
-                    id: item.id,
-                    titulo: item.titulo,
-                    texto: item.texto,
-                    local: item.local,
-                    data: item.data
-                  })
-                }
-              >
-                <View style={styles.itemContent}>
-                  <Text style={styles.itemTitle}>Título: <Text style={styles.itemText}>{item.titulo}</Text></Text>
-                  <Text style={styles.itemTitle}>Texto: <Text style={styles.itemText}>{item.texto}</Text></Text>
-                  <Text style={styles.itemTitle}>Local: <Text style={styles.itemText}>{item.local}</Text></Text>
-                  <Text style={styles.itemTitle}>Data: <Text style={styles.itemText}>{item.data}</Text></Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => deleteDiario(item.id)} style={styles.deleteButton}>
-                <MaterialCommunityIcons name="delete-empty" size={24} color="red" />
-              </TouchableOpacity>
-            </View>
-          )}
-          keyExtractor={(item) => item.id}
-        />
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate("Cadastrar Diario")}
-        >
+                <TouchableOpacity onPress={() => deleteDiario(item.id)}>
+                  <Text style={styles.deleteButton}>Excluir</Text>
+                </TouchableOpacity>
+
+              </View>
+            </SafeAreaView>
+          </TouchableOpacity>
+        )} 
+      />
+      <View style={styles.addButton}>
+        <TouchableOpacity onPress={() => navigation.navigate("Cadastrar Diario")}>
           <MaterialCommunityIcons name="plus-circle-outline" size={70} color="green" />
         </TouchableOpacity>
-        <Text style={styles.word}>Frase do dia: Vencer e Vencer!</Text>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -106,11 +85,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     margin: 20,
+    marginTop: 80,
     borderRadius: 20,
     shadowColor: '#000',
     shadowOffset: {
@@ -127,35 +106,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: '#3E4E5E',
   },
-  diarioItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  itemContent: {
-    flex: 1,
-  },
-  itemTitle: {
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#3E4E5E',
-  },
   itemText: {
     color: '#000',
-  },
-  deleteButton: {
-    marginLeft: 10,
-  },
-  addButton: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 35,
-    padding: 10,
-    zIndex: 1,
   },
   logoutButton: {
     position: 'absolute',
@@ -166,10 +118,17 @@ const styles = StyleSheet.create({
     padding: 10,
     zIndex: 1,
   },
-  word: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#F15A29',
-    marginTop: 20,
+  addButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 35,
+    padding: 10,
+    zIndex: 1,
+  },
+  deleteButton: {
+    color: 'red',
+    marginTop: 10,
   },
 });

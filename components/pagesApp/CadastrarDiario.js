@@ -7,35 +7,39 @@ import {
   TouchableOpacity,
   Alert
 } from 'react-native';
-
-import firebaseConfig from '../../firebaseConfig';
+import { getFirestore, collection, addDoc } from 'firebase/firestore'; 
 
 export default function CadDiario({ navigation }) {
-  const [titulo, setTitulo] = useState(null);
-  const [texto, setTexto] = useState(null);
-  const [data, setData] = useState(null);
-  const [local, setLocal] = useState(null);
+  const [titulo, setTitulo] = useState('');
+  const [texto, setTexto] = useState('');
+  const [data, setData] = useState('');
+  const [local, setLocal] = useState('');
+  const firestore = getFirestore();
 
-  function addDiario() {
-    firebaseConfig.collection('diario').add({
+  async function addDiario() {
+    try {
+      const docRef = await addDoc(collection(firestore, 'diario'), {
         titulo: titulo,
         texto: texto,
         data: data,
         local: local,
-    });
-    setTitulo({titulo: ''} );
-    setTexto({texto: ''});
-    setData({data: ''});
-    setLocal({local: ''});
-    Alert.alert("Cadastro", "Diário adicionado com sucesso");
-    navigation.navigate("Home");
-}
-
+      });
+      setTitulo('');
+      setTexto('');
+      setData('');
+      setLocal('');
+      Alert.alert("Cadastro", "Diário adicionado com sucesso");
+      navigation.navigate("Home");
+    } catch (error) {
+      console.error("Erro ao adicionar diário:", error.message);
+      Alert.alert("Erro", "Ocorreu um erro ao adicionar o diário. Por favor, tente novamente.");
+    }
+  }
 
   return (
     <View style={styles.container}>
       <View>
-        <Text style={styles.title}>Cadastre suas Entradas</Text>
+        <Text style={styles.title}>O que aconteceu hoje?</Text>
       </View>
       <TextInput
         autoCapitalize="sentences"
