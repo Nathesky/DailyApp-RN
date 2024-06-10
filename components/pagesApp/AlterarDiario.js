@@ -7,8 +7,8 @@ const firestore = getFirestore(app);
 
 export default function Alterar({ navigation, route }) {
 
-    const [titulo, setTitulo] = useState(route.params?.titulo); 
-    const [data, setData] = useState(route.params?.data);
+    const [titulo, setTitulo] = useState(route.params?.titulo || ''); 
+    const [data, setData] = useState(route.params?.data || '');
     const [texto, setTexto] = useState(route.params?.texto || '');
     const [local, setLocal] = useState(route.params?.local || '');
     
@@ -35,13 +35,6 @@ export default function Alterar({ navigation, route }) {
             Alert.alert("Erro", "Ocorreu um erro ao atualizar o registro. Por favor, tente novamente.");
         });
     }
-
-    useEffect(() => {
-        setTitulo(route.params?.titulo );
-        setData(route.params?.data );
-        setTexto(route.params?.texto || '');
-        setLocal(route.params?.local || '');
-    }, [route.params]);
 
     return (
         <SafeAreaView style={styles.container}>

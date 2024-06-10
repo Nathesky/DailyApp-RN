@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, TouchableOpacity, View, Text, FlatList, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView, TouchableOpacity, View, Text, FlatList, StyleSheet, Image } from 'react-native';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Ionicons } from '@expo/vector-icons';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { getFirestore } from "firebase/firestore";
-import firebaseConfig from '../../firebaseConfig';
 
 export default function Home({ navigation }) {
   
@@ -23,7 +22,9 @@ export default function Home({ navigation }) {
   useEffect(() => {
     const unsubscribeDiario = onSnapshot(collection(firestore, 'diario'), (querySnapshot) => {
       const lista = [];
-      querySnapshot.forEach((doc) => { lista.push({ ...doc.data(), id: doc.id }); });
+      querySnapshot.forEach((doc) => { 
+        lista.push({ ...doc.data(), id: doc.id }); 
+      });
       setDiario(lista);
     }); 
 
@@ -52,18 +53,24 @@ export default function Home({ navigation }) {
             data: item.data instanceof Date ? item.data.toDate() : null, 
             texto: item.texto,
             local: item.local,
-          }) }>
+            imageUrl: item.imageUrl 
+          })}>
             <SafeAreaView>
               <View style={styles.content}>
                 <Text style={styles.title}> Título: <Text style={styles.itemText}>{item.titulo}</Text> </Text>
                 <Text style={styles.itemText}> Data: {item.data} </Text>
                 <Text style={styles.itemText}> Texto: <Text style={styles.itemText}>{item.texto}</Text> </Text>
                 <Text style={styles.itemText}> Local: <Text style={styles.itemText}>{item.local}</Text> </Text>
-
+                {item.imageUrl && (
+                  <Image 
+                    source={{ uri: item.imageUrl }} 
+                    style={styles.image} 
+                    resizeMode="cover" 
+                  />
+                )}
                 <TouchableOpacity onPress={() => deleteDiario(item.id)}>
                   <Text style={styles.deleteButton}>Excluir</Text>
                 </TouchableOpacity>
-
               </View>
             </SafeAreaView>
           </TouchableOpacity>
@@ -99,6 +106,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
+    padding: 20,
   },
   title: {
     fontSize: 24,
@@ -131,4 +139,10 @@ const styles = StyleSheet.create({
     color: 'red',
     marginTop: 10,
   },
+  image: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginTop: 10,
+  }
 });
